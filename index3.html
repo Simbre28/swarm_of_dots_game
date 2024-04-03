@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swarm of Dots</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-color: black; /* Dark background */
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    // Set up canvas
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Dots properties
+    const numDots = 25;
+    const numBackgroundDots = 100; // Number of stationary dots in the background
+    const dotRadius = 3;
+    const followMouseFactor = 0.02; // Factor to determine how much dots follow the mouse (slower)
+    const maxDistance = 100; // Maximum distance to draw connections
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+    let dots = [];
+    let backgroundDots = [];
+
+    // Create dots
+    for (let i = 0; i < numDots; i++) {
+        dots.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: 0, // Start with zero velocity
+            vy: 0, // Start with zero velocity
+            color: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.8)`
+        });
+    }
+
+    // Create background dots
+    for (let i = 0; i < numBackgroundDots; i++) {
+        backgroundDots.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            color: 'rgba(255, 255, 255, 0.1)' // Lighter color for background dots
+        });
+    }
+
+    // Update function
+    function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw background dots
+        backgroundDots.forEach(dot => {
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = dot.color;
+            ctx.fill();
+        });
+        
+        // Update and draw moving dots
+        dots.forEach(dot => {
+            // Calculate distance from mouse
+            const dx = mouseX - dot.x;
+            const dy = mouseY - dot.y;
+            
+            // Move dot towards mouse with slower movement
+            dot.vx += dx * followMouseFactor;
+            dot.vy += dy * followMouseFactor;
+            
+            // Apply friction to simulate damping effect
+            dot.vx *= 0.95;
+            dot.vy *= 0.95;
+            
+            // Update dot position
+            dot.x += dot.vx;
+            dot.y += dot.vy;
+            
+            // Draw glowing dot
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
+            const gradient = ctx.createRadialGradient(dot.x, dot.y, 0, dot.x, dot.y, dotRadius);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(1, dot.color);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw connections between close dots
+            dots.forEach(otherDot => {
+                if (dot !== otherDot) {
+                    const distance = Math.sqrt((dot.x - otherDot.x) ** 2 + (dot.y - otherDot.y) ** 2);
+                    if (distance < maxDistance) {
+                        // Draw glowing line
+                        ctx.beginPath();
+                        ctx.moveTo(dot.x, dot.y);
+                        ctx.lineTo(otherDot.x, otherDot.y);
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${(maxDistance - distance) / maxDistance})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            });
+        });
+        requestAnimationFrame(update);
+    }
+    
+    // Update mouse position
+    canvas.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+    
+    // Start animation
+    update();
+</script>
+</body>
+</html>
